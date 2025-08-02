@@ -119,7 +119,7 @@ export default class Grader {
       // Since the stringification between "expected" and "result" is misleading, this gives a note
       //   to the student urging them to check that their obj_id
       let obj_id_exists = "";
-      let obj_id_message = "\n*** Note: Are your ObjectId's passed as the wrong type? ***";
+      let obj_id_message = "\n*** Note: id is an ObjectId, but must be converted to string. ***";
       if (Array.isArray(actual)) {
         let res = findAllObjectIdsInArray(actual);
         res.length > 0
