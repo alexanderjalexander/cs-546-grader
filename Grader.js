@@ -83,7 +83,56 @@ export default class Grader {
     try {
       deepStrictEqual(actual, expectedValue, 'Expected strict deep equality');
     } catch (e) {
-      this.deductPoints(points, `${message}; Unexpected results.`,
+      const findAllObjectIdsInArray = (arr) => {
+        let new_arr = [];
+        for (let item of arr) {
+          if (ObjectId.isValid(item) && typeof item === 'object' && item._bsontype === 'ObjectId') {
+            new_arr.push(item);
+          } else if (Array.isArray(item)) {
+            let res = findAllObjectIdsInArray(item);
+            if (res.length > 0) new_arr.push(res);
+          } else if (item instanceof Object) {
+            let res = findAllObjectIdsInObj(item);
+            if (Object.keys(res).length > 0) new_arr.push(item);
+          }
+        }
+        return new_arr;
+      }
+
+      const findAllObjectIdsInObj = (obj) => {
+        let new_obj = {};
+        for (let key of Object.keys(obj)) {
+          if (ObjectId.isValid(obj[key]) && typeof obj[key] === 'object' && obj[key]._bsontype === 'ObjectId') {
+            new_obj[key] = obj[key];
+          } else if (Array.isArray(obj[key])) {
+            let res = findAllObjectIdsInArray(obj[key]);
+            if (res.length > 0) new_obj[key] = res;
+          } else if (obj[key] instanceof Object) {
+            let res = findAllObjectIdsInObj(obj[key]);
+            if (Object.keys(res).length > 0) new_obj[key] = res;
+          }
+        }
+        return new_obj;
+      }
+
+      // Check if ObjectId's are passed in. Lab specs usually require ObjectId's to be stringified.
+      // Since the stringification between "expected" and "result" is misleading, this gives a note
+      //   to the student urging them to check that their obj_id
+      let obj_id_exists = "";
+      let obj_id_message = "\n*** Note: Are your ObjectId's passed as the wrong type? ***";
+      if (Array.isArray(actual)) {
+        let res = findAllObjectIdsInArray(actual);
+        res.length > 0
+          ? obj_id_exists = obj_id_message
+          : obj_id_exists = "";
+      } else if (actual instanceof Object) {
+        let res = findAllObjectIdsInObj(actual);
+        Object.keys(res).length > 0
+          ? obj_id_exists = obj_id_message
+          : obj_id_exists = "";
+      }
+
+      this.deductPoints(points, `${message}; Unexpected results.${obj_id_exists}`,
         `Received: ${pretty(actual)}\nExpected: ${pretty(expectedValue)}`);
     }
   }
