@@ -36,6 +36,7 @@ export default class Grader {
     this.runStartScript = assignmentConfig.runStartScript;
     this.checkPackage = assignmentConfig.checkPackage ?? true;
     this.hasDatabase = assignmentConfig.hasDatabase;
+    this.printObjectIdMessage = assignmentConfig.printObjectIdMessage ?? true;
     this.connectionString = assignmentConfig.connectionString
       || 'mongodb://localhost:27017/';
     this.packageJson = null;
@@ -119,17 +120,19 @@ export default class Grader {
       // Since the stringification between "expected" and "result" is misleading, this gives a note
       //   to the student urging them to check that their obj_id
       let obj_id_exists = "";
-      let obj_id_message = "\n*** Note: id is an ObjectId, but must be converted to string. ***";
-      if (Array.isArray(actual)) {
-        let res = findAllObjectIdsInArray(actual);
-        res.length > 0
-          ? obj_id_exists = obj_id_message
-          : obj_id_exists = "";
-      } else if (actual instanceof Object) {
-        let res = findAllObjectIdsInObj(actual);
-        Object.keys(res).length > 0
-          ? obj_id_exists = obj_id_message
-          : obj_id_exists = "";
+      if (this.printObjectIdMessage) {
+        let obj_id_message = "\n*** Note: id is an ObjectId, but must be converted to string. ***";
+        if (Array.isArray(actual)) {
+          let res = findAllObjectIdsInArray(actual);
+          res.length > 0
+            ? obj_id_exists = obj_id_message
+            : obj_id_exists = "";
+        } else if (actual instanceof Object) {
+          let res = findAllObjectIdsInObj(actual);
+          Object.keys(res).length > 0
+            ? obj_id_exists = obj_id_message
+            : obj_id_exists = "";
+        }
       }
 
       this.deductPoints(points, `${message}; Unexpected results.${obj_id_exists}`,
@@ -381,7 +384,9 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
   async assertValidHTML(points, rawHTML, pageName) {
     let res;
     try {
-      res = await fetch('https://validator.w3.org/nu/?out=json', {
+      // Manual timeout, because sometimes a 503 occurs if you send too many requests.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      res = await fetch('https://validator.nu/?out=json', {
         method: 'POST',
         headers: {
           'Content-Type': 'text/html; charset=utf-8'
@@ -392,6 +397,9 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
       if (e instanceof TypeError)
         throw new Error("Couldn't contact the HTML validator successfully.");
       throw e;
+    }
+    if (res.status !== 200) {
+      throw new Error("HTML Validator Error: 503 Service Temporarily Unavailable. Please try again in a moment.")
     }
     const { messages } = await res.json();
     for (const message of messages) {
