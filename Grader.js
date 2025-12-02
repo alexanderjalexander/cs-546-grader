@@ -85,54 +85,54 @@ export default class Grader {
       deepStrictEqual(actual, expectedValue, 'Expected strict deep equality');
     } catch (e) {
       const findAllObjectIdsInArray = (arr) => {
-        let new_arr = [];
-        for (let item of arr) {
+        let newArr = [];
+        for (let i = 0; i < arr.length; i++) {
+          const item = arr[i];
           if (ObjectId.isValid(item) && typeof item === 'object' && item._bsontype === 'ObjectId') {
-            new_arr.push(item);
+            newArr.push(`[${i}]`);
           } else if (Array.isArray(item)) {
             let res = findAllObjectIdsInArray(item);
-            if (res.length > 0) new_arr.push(res);
+            newArr.push(*res.map(subItem => `[${i}]${subItem}`));
           } else if (item instanceof Object) {
             let res = findAllObjectIdsInObj(item);
-            if (Object.keys(res).length > 0) new_arr.push(item);
+            newArr.push(*res.map(subItem => `[${i}]${subItem}`));
           }
         }
-        return new_arr;
+        return newArr;
       }
 
       const findAllObjectIdsInObj = (obj) => {
-        let new_obj = {};
+        let newArr = [];
         for (let key of Object.keys(obj)) {
           if (ObjectId.isValid(obj[key]) && typeof obj[key] === 'object' && obj[key]._bsontype === 'ObjectId') {
-            new_obj[key] = obj[key];
+            newArr.push(`.${key}`);
           } else if (Array.isArray(obj[key])) {
             let res = findAllObjectIdsInArray(obj[key]);
-            if (res.length > 0) new_obj[key] = res;
+            newArr.push(*res.map(subItem => `.${key}${subItem}`));
           } else if (obj[key] instanceof Object) {
             let res = findAllObjectIdsInObj(obj[key]);
-            if (Object.keys(res).length > 0) new_obj[key] = res;
+            newArr.push(*res.map(subItem => `.${key}${subItem}`));
           }
         }
-        return new_obj;
+        return newArr;
       }
 
       // Check if ObjectId's are passed in. Lab specs usually require ObjectId's to be stringified.
       // Since the stringification between "expected" and "result" is misleading, this gives a note
       //   to the student urging them to check that their obj_id
-      let obj_id_exists = "";
+      let keys = [];
       if (this.printObjectIdMessage) {
         if (Array.isArray(actual)) {
-          let res = findAllObjectIdsInArray(actual);
-          res.length > 0
-            ? obj_id_exists = `\n*** Note: the field(s) ${JSON.stringify(res)} is/are ObjectId(s), but must be converted to string. ***`
-            : obj_id_exists = "";
+          keys = findAllObjectIdsInArray(actual);
         } else if (actual instanceof Object) {
-          let res = findAllObjectIdsInObj(actual);
-          Object.keys(res).length > 0
-            ? obj_id_exists = `\n*** Note: the value(s) at key(s) ${JSON.stringify(Object.keys(res))} is/are ObjectId(s), but must be converted to string. ***`
-            : obj_id_exists = "";
+          keys = findAllObjectIdsInObj(actual);
         }
       }
+      keys = keys.map(key => key.replace(/^\./, ""));
+
+      const objIdErrMsg = keys.length
+        ? ` ObjectId type found at the following key(s) instead of type string: "${keys.join('", "')}"`
+        : "";
 
       this.deductPoints(points, `${message}; Unexpected results.${obj_id_exists}`,
         `Received: ${pretty(actual)}\nExpected: ${pretty(expectedValue)}`);
