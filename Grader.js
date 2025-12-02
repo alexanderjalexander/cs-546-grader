@@ -92,10 +92,10 @@ export default class Grader {
             newArr.push(`[${i}]`);
           } else if (Array.isArray(item)) {
             let res = findAllObjectIdsInArray(item);
-            newArr.push(*res.map(subItem => `[${i}]${subItem}`));
+            newArr.push(...res.map(subItem => `[${i}]${subItem}`));
           } else if (item instanceof Object) {
             let res = findAllObjectIdsInObj(item);
-            newArr.push(*res.map(subItem => `[${i}]${subItem}`));
+            newArr.push(...res.map(subItem => `[${i}]${subItem}`));
           }
         }
         return newArr;
@@ -103,15 +103,15 @@ export default class Grader {
 
       const findAllObjectIdsInObj = (obj) => {
         let newArr = [];
-        for (let key of Object.keys(obj)) {
+        for (let key in obj) {
           if (ObjectId.isValid(obj[key]) && typeof obj[key] === 'object' && obj[key]._bsontype === 'ObjectId') {
             newArr.push(`.${key}`);
           } else if (Array.isArray(obj[key])) {
             let res = findAllObjectIdsInArray(obj[key]);
-            newArr.push(*res.map(subItem => `.${key}${subItem}`));
+            newArr.push(...res.map(subItem => `.${key}${subItem}`));
           } else if (obj[key] instanceof Object) {
             let res = findAllObjectIdsInObj(obj[key]);
-            newArr.push(*res.map(subItem => `.${key}${subItem}`));
+            newArr.push(...res.map(subItem => `.${key}${subItem}`));
           }
         }
         return newArr;
@@ -134,7 +134,7 @@ export default class Grader {
         ? ` ObjectId type found at the following key(s) instead of type string: "${keys.join('", "')}"`
         : "";
 
-      this.deductPoints(points, `${message}; Unexpected results.${obj_id_exists}`,
+      this.deductPoints(points, `${message}; Unexpected results.${objIdErrMsg}`,
         `Received: ${pretty(actual)}\nExpected: ${pretty(expectedValue)}`);
     }
   }
