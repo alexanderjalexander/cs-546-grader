@@ -121,16 +121,15 @@ export default class Grader {
       //   to the student urging them to check that their obj_id
       let obj_id_exists = "";
       if (this.printObjectIdMessage) {
-        let obj_id_message = "\n*** Note: id is an ObjectId, but must be converted to string. ***";
         if (Array.isArray(actual)) {
           let res = findAllObjectIdsInArray(actual);
           res.length > 0
-            ? obj_id_exists = obj_id_message
+            ? obj_id_exists = `\n*** Note: the field(s) ${JSON.stringify(res)} is/are ObjectId(s), but must be converted to string. ***`
             : obj_id_exists = "";
         } else if (actual instanceof Object) {
           let res = findAllObjectIdsInObj(actual);
           Object.keys(res).length > 0
-            ? obj_id_exists = obj_id_message
+            ? obj_id_exists = `\n*** Note: the value(s) at key(s) ${JSON.stringify(Object.keys(res))} is/are ObjectId(s), but must be converted to string. ***`
             : obj_id_exists = "";
         }
       }
@@ -399,7 +398,7 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
       throw e;
     }
     if (res.status !== 200) {
-      throw new Error("HTML Validator Error: 503 Service Temporarily Unavailable. Please try again in a moment.")
+      throw new Error(`"HTML Validator Error gave bad response: ${res.status} ${res.statusText}. Please re-run grader again later."`)
     }
     const { messages } = await res.json();
     for (const message of messages) {
