@@ -36,6 +36,7 @@ export default class Grader {
     this.runStartScript = assignmentConfig.runStartScript;
     this.checkPackage = assignmentConfig.checkPackage ?? true;
     this.hasDatabase = assignmentConfig.hasDatabase;
+    this.printObjectIdMessage = assignmentConfig.printObjectIdMessage ?? true;
     this.connectionString = assignmentConfig.connectionString
       || 'mongodb://localhost:27017/';
     this.packageJson = null;
@@ -83,7 +84,57 @@ export default class Grader {
     try {
       deepStrictEqual(actual, expectedValue, 'Expected strict deep equality');
     } catch (e) {
-      this.deductPoints(points, `${message}; Unexpected results.`,
+      const findAllObjectIdsInArray = (arr) => {
+        let newArr = [];
+        for (let i = 0; i < arr.length; i++) {
+          const item = arr[i];
+          if (ObjectId.isValid(item) && typeof item === 'object' && item._bsontype === 'ObjectId') {
+            newArr.push(`[${i}]`);
+          } else if (Array.isArray(item)) {
+            let res = findAllObjectIdsInArray(item);
+            newArr.push(...res.map(subItem => `[${i}]${subItem}`));
+          } else if (item instanceof Object) {
+            let res = findAllObjectIdsInObj(item);
+            newArr.push(...res.map(subItem => `[${i}]${subItem}`));
+          }
+        }
+        return newArr;
+      }
+
+      const findAllObjectIdsInObj = (obj) => {
+        let newArr = [];
+        for (let key in obj) {
+          if (ObjectId.isValid(obj[key]) && typeof obj[key] === 'object' && obj[key]._bsontype === 'ObjectId') {
+            newArr.push(`.${key}`);
+          } else if (Array.isArray(obj[key])) {
+            let res = findAllObjectIdsInArray(obj[key]);
+            newArr.push(...res.map(subItem => `.${key}${subItem}`));
+          } else if (obj[key] instanceof Object) {
+            let res = findAllObjectIdsInObj(obj[key]);
+            newArr.push(...res.map(subItem => `.${key}${subItem}`));
+          }
+        }
+        return newArr;
+      }
+
+      // Check if ObjectId's are passed in. Lab specs usually require ObjectId's to be stringified.
+      // Since the stringification between "expected" and "result" is misleading, this gives a note
+      //   to the student urging them to check that their obj_id
+      let keys = [];
+      if (this.printObjectIdMessage) {
+        if (Array.isArray(actual)) {
+          keys = findAllObjectIdsInArray(actual);
+        } else if (actual instanceof Object) {
+          keys = findAllObjectIdsInObj(actual);
+        }
+      }
+      keys = keys.map(key => key.replace(/^\./, ""));
+
+      const objIdErrMsg = keys.length
+        ? ` ObjectId type found at the following key(s) instead of type string: "${keys.join('", "')}"`
+        : "";
+
+      this.deductPoints(points, `${message}; Unexpected results.${objIdErrMsg}`,
         `Received: ${pretty(actual)}\nExpected: ${pretty(expectedValue)}`);
     }
   }
@@ -332,7 +383,9 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
   async assertValidHTML(points, rawHTML, pageName) {
     let res;
     try {
-      res = await fetch('https://validator.w3.org/nu/?out=json', {
+      // Manual timeout, because sometimes a 503 occurs if you send too many requests.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      res = await fetch('https://validator.nu/?out=json', {
         method: 'POST',
         headers: {
           'Content-Type': 'text/html; charset=utf-8'
@@ -343,6 +396,9 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
       if (e instanceof TypeError)
         throw new Error("Couldn't contact the HTML validator successfully.");
       throw e;
+    }
+    if (res.status !== 200) {
+      throw new Error(`"HTML Validator Error gave bad response: ${res.status} ${res.statusText}. Please re-run grader again later."`)
     }
     const { messages } = await res.json();
     for (const message of messages) {
