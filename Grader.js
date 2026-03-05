@@ -6,6 +6,7 @@ import { pathToFileURL } from 'url';
 import { MongoClient, ObjectId } from 'mongodb';
 import { FatalGraderError } from './Utils.js';
 import { HTTPRequest, HTTPResponse, Page,  } from 'puppeteer-core';
+import { HtmlValidate } from 'html-validate';
 
 /**
  * HTTP request verb
@@ -243,7 +244,7 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
    * Asserts that a response is ok (status 200) and has the specified body.
    * @param {number} points Points the test case is worth
    * @param {string} url URL to request
-   * @param {Verb} method Request method to use 
+   * @param {Verb} method Request method to use
    * @param {*} body Request body (stringified automatically if needed)
    * @param {*} expectedValue Expected response body (can be any type)
    */
@@ -285,7 +286,7 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
    * of it.
    * @param {number} points Points the test case is worth
    * @param {string} url URL to request
-   * @param {Verb} method Request method to use 
+   * @param {Verb} method Request method to use
    * @param {*} body Request body (stringified automatically if needed)
    * @param {*} expectedValue Expected response body (can be any type)
    * @return {Promise<string>} The value of the `_id` property
@@ -328,7 +329,7 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
    * @param {string} message Message to print before error text.
    * @param {*} testCase Test case to post-process.
    * @param {*} expectedValue Expected value(s) to pass to the assertion
-   * @param {*} assertion 
+   * @param {*} assertion
    * @returns {Promise<string>} The _id field from `testCase()`
    */
   async assertWithoutId(points, message, testCase, expectedValue, assertion) {
@@ -358,7 +359,7 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
    * Asserts that a request response has a certain status code.
    * @param {number} points Points the test case is worth
    * @param {string} url URL to request
-   * @param {Verb} method Request method to use 
+   * @param {Verb} method Request method to use
    * @param {*} body Request body (stringified automatically if needed)
    * @param {number} expectedStatus Status code that response should have
    * @returns {Promise<void>}
@@ -372,6 +373,24 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
         + (body ? `\n${JSON.stringify(body, null, 2)}` : ''),
       `Received status: ${status}\nExpected status: ${expectedStatus}`
     );
+  }
+
+  /**
+   * Asserts that a page has no HTML validation errors, using an NPM package
+   * rather than an external validator service.
+   * @param {number} points Points to deduct for invalid HTML
+   * @param {string} rawHTML Raw text of the page as a string
+   * @param {string} pageName Name to print in comment
+   */
+  async assertValidHTMLLocal(points, rawHTML, pageName) {
+    const validator = new HtmlValidate({extends: ["html-validate:recommended"]});
+    const report = validator.validateStringSync(rawHTML);
+    if (report.errorCount > 0) {
+      this.deductPoints(
+        points,
+        `${pageName} has HTML validation errors.`
+      );
+    }
   }
 
   /**
@@ -415,7 +434,7 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
   /**
    * Goes to a page with puppeteer with an interception handler.
    * Useful for posting data or any request that isn't a GET.
-   * @param {Page} page Puppeteer page 
+   * @param {Page} page Puppeteer page
    * @param {string} location Location to go to
    * @param {(req: HTTPRequest)=>any} handler Interception handler
    * @returns {Promise<HTTPResponse>}
@@ -508,7 +527,7 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
       subprocess.on('close', () => this.subprocessClosed = true);
     });
   }
-  
+
   /**
    * Called internally by the grading framework.
    */
