@@ -18,6 +18,10 @@
     "type": "git",
     "url": "git+https://github.com/ashkenas/cs-546-grader.git"
   },
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "test:coverage": "node --experimental-test-coverage --test tests/**/*.test.js"
+  },
   "author": "Jacob Ashkenas",
   "license": "MIT",
   "bugs": {
