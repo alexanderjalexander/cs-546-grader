@@ -251,7 +251,7 @@ describe("assertDeepEquals", () => {
 
   // Success Cases: Obvious Matches
   for (let i = 0; i < matches.length; i++) {
-    it(`Deducts on Obvious Match ${(i + 1).toString().padStart(matches.length.toString.length, " ")}`, async () => {
+    it(`Does Not Deduct on Obvious Match ${(i + 1).toString().padStart(matches.length.toString.length, " ")}`, async () => {
       const grader = new TestGrader();
       await grader.assertDeepEquals(
         10,
@@ -270,7 +270,7 @@ describe("assertDeepEquals", () => {
 
   // Success Cases: Deep Nests
   for (let i = 0; i < deep_matches.length; i++) {
-    it(`Deducts on Deep Nest Match ${(i + 1).toString().padStart(deep_matches.length.toString.length, " ")}`, async () => {
+    it(`Does Not Deduct on Deep Nest Match ${(i + 1).toString().padStart(deep_matches.length.toString.length, " ")}`, async () => {
       const grader = new TestGrader();
       await grader.assertDeepEquals(
         10,
@@ -289,7 +289,7 @@ describe("assertDeepEquals", () => {
 
   // Throwing Cases
   for (let i = 0; i < throwing_cases.length; i++) {
-    it(`Deducts on Throws ${(i + 1).toString().padStart(throwing_cases.length.toString.length, " ")}`, async () => {
+    it(`Deducts on Thrown Error ${(i + 1).toString().padStart(throwing_cases.length.toString.length, " ")}`, async () => {
       const grader = new TestGrader();
       await grader.assertDeepEquals(
         10,
