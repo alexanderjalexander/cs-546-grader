@@ -195,10 +195,10 @@ const object_id_mismatches = [
   },
   {
     actual: [
-      { _id: new ObjectId().toString() },
+      { _id: new ObjectId() },
       { _id: new ObjectId().toString() },
     ],
-    expected: [{ _id: new ObjectId().toString() }, { _id: new ObjectId() }],
+    expected: [{ _id: new ObjectId().toString() }, { _id: new ObjectId().toString() }],
   },
 ];
 
@@ -329,6 +329,10 @@ describe("assertDeepEquals", () => {
         grader.comments.length,
         0,
         "Grader did not add deduction comments for ObjectId mismatch.",
+      );
+      assert.ok(
+        grader.comments[0].includes("ObjectId type found at the following key(s) instead of type string"),
+        "Grader did not include ObjectId type notice in comments.",
       );
     });
   }
