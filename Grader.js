@@ -376,24 +376,6 @@ Server either didn't start, is at an unexpected URL, or crashed during the previ
   }
 
   /**
-   * Asserts that a page has no HTML validation errors, using an NPM package
-   * rather than an external validator service.
-   * @param {number} points Points to deduct for invalid HTML
-   * @param {string} rawHTML Raw text of the page as a string
-   * @param {string} pageName Name to print in comment
-   */
-  async assertValidHTMLLocal(points, rawHTML, pageName) {
-    const validator = new HtmlValidate({extends: ["html-validate:recommended"]});
-    const report = validator.validateStringSync(rawHTML);
-    if (report.errorCount > 0) {
-      this.deductPoints(
-        points,
-        `${pageName} has HTML validation errors.`
-      );
-    }
-  }
-
-  /**
    * Asserts that a page has no HTML validation errors
    * @param {number} points Points to deduct for invalid HTML
    * @param {string} rawHTML Raw text of the page as a string
